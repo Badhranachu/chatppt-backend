@@ -35,7 +35,12 @@ SECRET_KEY = 'django-insecure-^%bpacip4dwx!=u!vsgghb0)(8o!wr!a_#q9a=^pd)^ow!lnx9
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    "chatppt-backend.onrender.com",
+    "localhost",
+    "127.0.0.1"
+]
+
 
 
 # Application definition
