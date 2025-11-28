@@ -1,5 +1,6 @@
 django
 djangorestframework
-corsheaders
+django-cors-headers
 requests
 python-dotenv
+gunicorn
