@@ -5,7 +5,33 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from chatppt.settings import CHATPPT_SYSTEM_PROMPT
 
+
+OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+
+
 class ChatPPTView(APIView):
+
+    def call_model(self, api_key, messages, model):
+        """Calls OpenRouter with protection"""
+        payload = {
+            "model": model,
+            "messages": messages,
+            "max_tokens": 450
+        }
+
+        response = requests.post(
+            OPENROUTER_URL,
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+                "HTTP-Referer": "https://chatppt-frontend.vercel.app",
+                "X-Title": "ChatPPT"
+            },
+            json=payload,
+            timeout=45,
+        )
+        return response.json()
+
     def post(self, request):
         user_message = request.data.get("message", "").strip()
         context = request.data.get("context", "").strip()
@@ -13,12 +39,10 @@ class ChatPPTView(APIView):
 
         api_key = getattr(settings, "OPENROUTER_API_KEY", None) or os.getenv("OPENROUTER_API_KEY")
         if not api_key:
-            return Response({"answer": "⚠ OPENROUTER_API_KEY missing on backend"}, status=200)
+            return Response({"answer": "⚠ API key missing on backend"}, status=200)
 
-        # ---- System prompt ----
+        # system + context prompt
         messages = [{"role": "system", "content": CHATPPT_SYSTEM_PROMPT}]
-
-        # ---- User message ----
         if image_base64:
             messages.append({
                 "role": "user",
@@ -31,41 +55,27 @@ class ChatPPTView(APIView):
             combined = f"{context}\n\nUser: {user_message}" if context else user_message
             messages.append({"role": "user", "content": combined})
 
-        payload = {
-            "model": "openai/gpt-4.1-mini",   # <<< correct model
-            "messages": messages,
-            "max_tokens": 950,
-        }
+        # Primary model
+        models = [
+            "openai/gpt-4.1-mini",      # fast & smart
+            "openai/gpt-3.5-turbo"      # fallback if first fails
+        ]
 
-        # ---- Call OpenRouter safely ----
-        try:
-            response = requests.post(
-    "https://openrouter.ai/api/v1/chat/completions",
-    headers={
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json",
-        "Referer": "https://chatppt-frontend.vercel.app",  # <<< FIX
-        "X-Title": "ChatPPT"
-    },
-    json=payload,
-    timeout=35
-)
-            data = response.json()
-        except Exception as e:  # timeout / network problem
-            return Response({"answer": f"⚠ Server error: {str(e)}"}, status=200)
+        for model in models:
+            try:
+                data = self.call_model(api_key, messages, model)
 
-        # ---- OpenRouter returned an error ----
-        if "error" in data:
-            return Response({"answer": f"⚠ OpenRouter Error: {data['error']}"}, status=200)
+                # real response
+                if "choices" in data and data["choices"]:
+                    reply = data["choices"][0]["message"]["content"]
+                    if reply and reply.strip():
+                        return Response({"answer": reply}, status=200)
 
-        # ---- Extract final answer ----
-        assistant_reply = (
-            data.get("choices", [{}])[0]
-            .get("message", {})
-            .get("content", None)
+            except Exception:
+                pass  # continue to next model
+
+        # Final fallback - never return empty
+        return Response(
+            {"answer": "Server overloaded. Try again in 5 seconds 😴"},
+            status=200
         )
-
-        if not assistant_reply:
-            return Response({"answer": "⚠ Empty response received. Try again."}, status=200)
-
-        return Response({"answer": assistant_reply})
