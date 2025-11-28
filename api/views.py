@@ -40,15 +40,16 @@ class ChatPPTView(APIView):
         # ---- Call OpenRouter safely ----
         try:
             response = requests.post(
-                "https://openrouter.ai/api/v1/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json",
-                    "X-Title": "ChatPPT"
-                },
-                json=payload,
-                timeout=25
-            )
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+                "HTTP-Referer": "https://chatppt-frontend.vercel.app",
+                "X-Title": "ChatPPT"
+            },
+            json=payload,
+            timeout=35
+        )
             data = response.json()
         except Exception as e:  # timeout / network problem
             return Response({"answer": f"⚠ Server error: {str(e)}"}, status=200)
