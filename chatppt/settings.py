@@ -38,7 +38,8 @@ DEBUG = True
 ALLOWED_HOSTS = [
     "chatppt-backend.onrender.com",
     "localhost",
-    "127.0.0.1"
+    "127.0.0.1",
+    "chatppt-frontend.vercel.app"
 ]
 
 
