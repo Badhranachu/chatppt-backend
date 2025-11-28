@@ -34,22 +34,22 @@ class ChatPPTView(APIView):
         payload = {
             "model": "openai/gpt-4.1-mini",   # <<< correct model
             "messages": messages,
-            "max_tokens": 350,
+            "max_tokens": 950,
         }
 
         # ---- Call OpenRouter safely ----
         try:
             response = requests.post(
-            "https://openrouter.ai/api/v1/chat/completions",
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json",
-                "HTTP-Referer": "https://chatppt-frontend.vercel.app",
-                "X-Title": "ChatPPT"
-            },
-            json=payload,
-            timeout=35
-        )
+    "https://openrouter.ai/api/v1/chat/completions",
+    headers={
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+        "Referer": "https://chatppt-frontend.vercel.app",  # <<< FIX
+        "X-Title": "ChatPPT"
+    },
+    json=payload,
+    timeout=35
+)
             data = response.json()
         except Exception as e:  # timeout / network problem
             return Response({"answer": f"⚠ Server error: {str(e)}"}, status=200)
