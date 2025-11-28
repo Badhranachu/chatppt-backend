@@ -52,7 +52,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-     "rest_framework",
+    "rest_framework",
     "corsheaders",
     "api",
 ]
@@ -68,7 +68,6 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
 ]
 
-CORS_ALLOW_ALL_ORIGINS = True
 
 
 ROOT_URLCONF = 'chatppt.urls'
@@ -233,7 +232,6 @@ REST_FRAMEWORK = {
 
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
     "https://chatppt-frontend.vercel.app",
 ]
 
