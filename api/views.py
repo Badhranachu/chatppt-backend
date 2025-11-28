@@ -12,6 +12,7 @@ class ChatPPTView(APIView):
         image_base64 = request.data.get("image_base64", None)
 
         api_key = getattr(settings, "OPENROUTER_API_KEY", None) or os.getenv("OPENROUTER_API_KEY")
+        print(api_key,"HHHHHHHHHH")
         if not api_key:
             return Response({"error": "Missing OpenRouter key"}, status=500)
 
@@ -42,10 +43,15 @@ class ChatPPTView(APIView):
         }
 
         response = requests.post(
-            "https://openrouter.ai/api/v1/chat/completions",
-            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-            json=payload,
-        )
+                "https://openrouter.ai/api/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json",
+                    "X-Title": "ChatPPT"
+                },
+                json=payload,
+                timeout=35  # avoid infinite loading
+            )
 
         data = response.json()
         assistant_reply = data.get("choices", [{}])[0].get("message", {}).get("content", None)
