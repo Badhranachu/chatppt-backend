@@ -230,3 +230,14 @@ REST_FRAMEWORK = {
         "rest_framework.renderers.JSONRenderer",
     )
 }
+
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "https://chatppt-frontend.vercel.app",
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://chatppt-backend.onrender.com",
+    "https://chatppt-frontend.vercel.app",
+]
