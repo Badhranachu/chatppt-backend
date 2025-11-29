@@ -17,7 +17,8 @@ from dotenv import load_dotenv
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 load_dotenv(os.path.join(BASE_DIR, ".env"))
 
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 
 from pathlib import Path
@@ -239,5 +240,3 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 
-
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")

@@ -11,7 +11,9 @@ def chat(request):
         user_message = request.data.get("message", "")
         context = request.data.get("context", "")
 
-        messages = [{"role": "system", "content": settings.CHATPPT_SYSTEM_PROMPT}]
+        messages = [
+            {"role": "system", "content": settings.CHATPPT_SYSTEM_PROMPT}
+        ]
         if context:
             messages.append({"role": "assistant", "content": context})
         messages.append({"role": "user", "content": user_message})
@@ -19,15 +21,15 @@ def chat(request):
         completion = client.chat.completions.create(
             model="llama3-8b-8192",
             messages=messages,
-            temperature=0.8,
+            temperature=0.7,
         )
 
         reply = completion.choices[0].message.content
         return Response({"answer": reply})
 
     except Exception as e:
-        return Response({"answer": f"⚠ Server error: {str(e)}"})
-        
+        return Response({"answer": f"⚠ Error: {str(e)}"})
+
 
 @api_view(["GET"])
 def ping(request):
