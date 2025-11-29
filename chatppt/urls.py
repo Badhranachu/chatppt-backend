@@ -21,8 +21,17 @@ from django.contrib import admin
 from django.urls import path, include
 from api.health import health_check
 
+from django.http import JsonResponse
+
+def ping(request):
+    return JsonResponse({"status": "alive"})
+
+
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/", include("api.urls")),
     path("health/", health_check),
+    path("ping/", ping),
+
+    
 ]
