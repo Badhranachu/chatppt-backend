@@ -9,12 +9,15 @@ OPENROUTER_API_KEY = settings.OPENROUTER_API_KEY
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 # fallback model order
-AI_MODELS = [
-    "deepseek/deepseek-chat",
-    "mistralai/mistral-7b-instruct",
-    "google/gemini-pro-1.5",
-    "qwen/qwen-2-7b-instruct",
-]
+# AI_MODELS = [
+#     "deepseek/deepseek-chat",
+#     "mistralai/mistral-7b-instruct",
+#     "google/gemini-pro-1.5",
+#     "qwen/qwen-2-7b-instruct",
+# ]
+
+AI_MODELS = ["qwen/qwen-2-7b-instruct"]
+
 
 HEADERS = {
     "Authorization": f"Bearer {OPENROUTER_API_KEY}",
