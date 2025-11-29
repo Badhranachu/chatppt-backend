@@ -36,11 +36,13 @@ SECRET_KEY = 'django-insecure-^%bpacip4dwx!=u!vsgghb0)(8o!wr!a_#q9a=^pd)^ow!lnx9
 DEBUG = False
 
 ALLOWED_HOSTS = [
-    "chatppt-backend-production.up.railway.app",
+    # "chatppt-backend.onrender.com",          # old Render backend (optional now)
+    "chatppt-backend-production.up.railway.app",  # ✅ NEW: Railway backend
     "localhost",
     "127.0.0.1",
-    "chatppt-frontend.vercel.app"
+    "chatppt-frontend.vercel.app",           # frontend hostname is fine here
 ]
+
 
 
 
@@ -226,13 +228,12 @@ REST_FRAMEWORK = {
     )
 }
 
-
 CORS_ALLOWED_ORIGINS = [
-    "https://chatppt-frontend.vercel.app",
-    "http://localhost:3000",
+    "https://chatppt-frontend.vercel.app",   # frontend
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://chatppt-backend-production.up.railway.app",
+    # "https://chatppt-backend.onrender.com",              # old
+    "https://chatppt-backend-production.up.railway.app", # ✅ NEW
     "https://chatppt-frontend.vercel.app",
 ]

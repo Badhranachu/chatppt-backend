@@ -1,85 +1,81 @@
 import os
 import requests
-import threading
-from django.conf import settings
-from rest_framework.views import APIView
+import time
+from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from chatppt.settings import CHATPPT_SYSTEM_PROMPT
+from django.conf import settings
 
+OPENROUTER_API_KEY = settings.OPENROUTER_API_KEY
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
+# Priority list — if first fails, next model is automatically used
+AI_MODELS = [
+    "deepseek/deepseek-chat",
+    "mistralai/mistral-large",
+    "qwen/qwen-2-7b-instruct",
+    "google/gemini-pro-1.5",
+]
 
-def keep_alive():
-    """Prevents Render backend from sleeping"""
-    while True:
-        try:
-            requests.get("https://chatppt-backend.onrender.com/api/chat/")
-        except:
-            pass
-        import time
-        time.sleep(600)  # 10 minutes
+HEADERS = {
+    "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+    "Content-Type": "application/json",
+    "HTTP-Referer": "https://chatppt-frontend.vercel.app",
+    "X-Title": "ChatPPT",
+}
 
 
-threading.Thread(target=keep_alive, daemon=True).start()
+@api_view(["POST"])
+def chat(request):
+    user_message = request.data.get("message", "")
+    context = request.data.get("context", "")
+    image_base64 = request.data.get("image_base64", None)
 
+    # Build messages payload
+    system_prompt = settings.CHATPPT_SYSTEM_PROMPT
+    messages = [{"role": "system", "content": system_prompt}]
 
-class ChatPPTView(APIView):
+    if context:
+        messages.append({"role": "assistant", "content": context})
 
-    def call_model(self, api_key, messages, model):
+    if image_base64:
+        messages.append({
+            "role": "user",
+            "content": [
+                {"type": "text", "text": user_message},
+                {"type": "image_url", "image_url": f"data:image/png;base64,{image_base64}"}
+            ]
+        })
+    else:
+        messages.append({"role": "user", "content": user_message})
+
+    # Try models sequentially
+    for model in AI_MODELS:
         payload = {
             "model": model,
             "messages": messages,
-            "max_tokens": 450
+            "temperature": 0.8,
         }
 
-        response = requests.post(
-            OPENROUTER_URL,
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json",
-                "HTTP-Referer": "https://chatppt-frontend.vercel.app",
-                "X-Title": "ChatPPT"
-            },
-            json=payload,
-            timeout=45,
-        )
-        return response.json()
-
-    def post(self, request):
-        user_message = request.data.get("message", "").strip()
-        context = request.data.get("context", "").strip()
-        image_base64 = request.data.get("image_base64", None)
-
-        api_key = getattr(settings, "OPENROUTER_API_KEY", None) or os.getenv("OPENROUTER_API_KEY")
-        if not api_key:
-            return Response({"answer": "⚠ API key missing"}, status=200)
-
-        messages = [{"role": "system", "content": CHATPPT_SYSTEM_PROMPT}]
-        if image_base64:
-            messages.append({
-                "role": "user",
-                "content": [
-                  {"type": "text", "text": user_message},
-                  {"type": "image_url", "image_url": f"data:image/jpeg;base64,{image_base64}"}
-                ]
-            })
-        else:
-            combined = f"{context}\n\nUser: {user_message}" if context else user_message
-            messages.append({"role": "user", "content": combined})
-
-        models = [
-            "openai/gpt-4.1-mini",
-            "openai/gpt-3.5-turbo"
-        ]
-
-        for model in models:
+        # Retry each model max 3 times
+        for attempt in range(3):
             try:
-                data = self.call_model(api_key, messages, model)
-                if "choices" in data and data["choices"]:
-                    reply = data["choices"][0]["message"]["content"]
-                    if reply:
-                        return Response({"answer": reply}, status=200)
+                r = requests.post(OPENROUTER_URL, headers=HEADERS, json=payload, timeout=30)
+                if r.status_code == 200:
+                    answer = r.json()["choices"][0]["message"]["content"]
+                    return Response({"answer": answer})
+                elif r.status_code in [429, 503]:
+                    time.sleep(1.5)  # temporary overload sleep
+                else:
+                    break
             except Exception:
-                continue
+                time.sleep(1)
 
-        return Response({"answer": "Server overloaded. Try again in 5 seconds 😴"}, status=200)
+    # If everything failed
+    return Response({
+        "answer": "⚠ AI overloaded. Please try again in a moment 🙇"
+    })
+
+
+@api_view(["GET"])
+def ping(request):
+    return Response({"status": "alive"})
