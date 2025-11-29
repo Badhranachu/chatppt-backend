@@ -237,3 +237,7 @@ CSRF_TRUSTED_ORIGINS = [
     "https://chatppt-backend-production.up.railway.app", # ✅ NEW
     "https://chatppt-frontend.vercel.app",
 ]
+
+
+
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
