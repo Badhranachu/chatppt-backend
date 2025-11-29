@@ -8,12 +8,12 @@ from django.conf import settings
 OPENROUTER_API_KEY = settings.OPENROUTER_API_KEY
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
-# Priority list — if first fails, next model is automatically used
+# fallback model order
 AI_MODELS = [
     "deepseek/deepseek-chat",
-    "mistralai/mistral-large",
-    "qwen/qwen-2-7b-instruct",
+    "mistralai/mistral-7b-instruct",
     "google/gemini-pro-1.5",
+    "qwen/qwen-2-7b-instruct",
 ]
 
 HEADERS = {
@@ -30,10 +30,8 @@ def chat(request):
     context = request.data.get("context", "")
     image_base64 = request.data.get("image_base64", None)
 
-    # Build messages payload
-    system_prompt = settings.CHATPPT_SYSTEM_PROMPT
-    messages = [{"role": "system", "content": system_prompt}]
-
+    # messages payload
+    messages = [{"role": "system", "content": settings.CHATPPT_SYSTEM_PROMPT}]
     if context:
         messages.append({"role": "assistant", "content": context})
 
@@ -48,32 +46,35 @@ def chat(request):
     else:
         messages.append({"role": "user", "content": user_message})
 
-    # Try models sequentially
-    for model in AI_MODELS:
-        payload = {
-            "model": model,
-            "messages": messages,
-            "temperature": 0.8,
-        }
+    start_time = time.time()  # ⏳ to prevent 502
 
-        # Retry each model max 3 times
-        for attempt in range(3):
+    # model failover
+    for model in AI_MODELS:
+        payload = {"model": model, "messages": messages, "temperature": 0.8}
+
+        for _ in range(2):  # two attempts per model
             try:
-                r = requests.post(OPENROUTER_URL, headers=HEADERS, json=payload, timeout=30)
+                r = requests.post(
+                    OPENROUTER_URL,
+                    headers=HEADERS,
+                    json=payload,
+                    timeout=15    # ⛑ response forced within 15s
+                )
                 if r.status_code == 200:
-                    answer = r.json()["choices"][0]["message"]["content"]
-                    return Response({"answer": answer})
-                elif r.status_code in [429, 503]:
-                    time.sleep(1.5)  # temporary overload sleep
-                else:
-                    break
+                    return Response({"answer": r.json()["choices"][0]["message"]["content"]})
+
+                # if 429/503 → wait + retry
+                if r.status_code in [429, 503]:
+                    time.sleep(1.2)
+
             except Exception:
                 time.sleep(1)
 
-    # If everything failed
-    return Response({
-        "answer": "⚠ AI overloaded. Please try again in a moment 🙇"
-    })
+        # ⏱ kills if backend waits too long (prevents 502)
+        if time.time() - start_time > 26:
+            return Response({"answer": "😵 AI busy — try again in a moment"})
+
+    return Response({"answer": "⚠ All AI models overloaded — try again soon 🙇"})
 
 
 @api_view(["GET"])
