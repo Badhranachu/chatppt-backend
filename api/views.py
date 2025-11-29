@@ -16,7 +16,7 @@ OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 #     "qwen/qwen-2-7b-instruct",
 # ]
 
-AI_MODELS = ["qwen/qwen-2-7b-instruct"]
+AI_MODELS = ["deepseek/deepseek-chat"]
 
 
 HEADERS = {
