@@ -33,10 +33,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-^%bpacip4dwx!=u!vsgghb0)(8o!wr!a_#q9a=^pd)^ow!lnx9'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = [
-    "chatppt-backend.onrender.com",
+    "chatppt-backend-production.up.railway.app",
     "localhost",
     "127.0.0.1",
     "chatppt-frontend.vercel.app"
@@ -229,9 +229,10 @@ REST_FRAMEWORK = {
 
 CORS_ALLOWED_ORIGINS = [
     "https://chatppt-frontend.vercel.app",
+    "http://localhost:3000",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://chatppt-backend.onrender.com",
+    "https://chatppt-backend-production.up.railway.app",
     "https://chatppt-frontend.vercel.app",
 ]
