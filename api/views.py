@@ -1,36 +1,53 @@
-from django.conf import settings
+import os
+import time
+from groq import Groq
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from groq import Groq
+from django.conf import settings
 
 client = Groq(api_key=settings.GROQ_API_KEY)
 
+GROQ_MODELS = [
+    "llama-3.1-8b-instant",
+    "llama-3.1-70b-versatile",
+    "mixtral-8x7b",
+]
+
 @api_view(["POST"])
 def chat(request):
-    try:
-        user_message = request.data.get("message", "")
-        context = request.data.get("context", "")
+    user_message = request.data.get("message", "")
+    context = request.data.get("context", "")
+    image_base64 = request.data.get("image_base64", None)
 
-        messages = [
-            {"role": "system", "content": settings.CHATPPT_SYSTEM_PROMPT}
-        ]
-        if context:
-            messages.append({"role": "assistant", "content": context})
+    messages = [{"role": "system", "content": settings.CHATPPT_SYSTEM_PROMPT}]
+    if context:
+        messages.append({"role": "assistant", "content": context})
+
+    if image_base64:
+        messages.append({
+            "role": "user",
+            "content": [
+                {"type": "text", "text": user_message},
+                {"type": "image_url", "image_url": f"data:image/png;base64,{image_base64}"}
+            ]
+        })
+    else:
         messages.append({"role": "user", "content": user_message})
 
-        completion = client.chat.completions.create(
-            model="llama3-8b-8192",
-            messages=messages,
-            temperature=0.7,
-        )
+    start_time = time.time()
 
-        reply = completion.choices[0].message.content
-        return Response({"answer": reply})
+    for model in GROQ_MODELS:
+        try:
+            response = client.chat.completions.create(
+                model=model,
+                messages=messages,
+                temperature=0.8,
+                timeout=15
+            )
+            return Response({"answer": response.choices[0].message.content})
 
-    except Exception as e:
-        return Response({"answer": f"⚠ Error: {str(e)}"})
+        except Exception as e:
+            if time.time() - start_time > 24:
+                break
 
-
-@api_view(["GET"])
-def ping(request):
-    return Response({"status": "alive"})
+    return Response({"answer": "😵 Groq overloaded — try again soon"})
