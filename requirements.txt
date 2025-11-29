@@ -3,4 +3,5 @@ djangorestframework
 django-cors-headers
 requests
 python-dotenv
+groq
 gunicorn
