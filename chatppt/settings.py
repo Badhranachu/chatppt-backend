@@ -246,9 +246,7 @@ REST_FRAMEWORK = {
 
 CORS_ALLOWED_ORIGINS = [
     "https://chatppt-frontend.vercel.app",   # frontend
-    "https://chatppt-frontend-git-main-badhran-s-projects.vercel.app",
-    "http://localhost:5173/"
-
+    "https://chatppt-frontend-git-main-badhran-s-projects.vercel.app"
 ]
 
 CSRF_TRUSTED_ORIGINS = [
