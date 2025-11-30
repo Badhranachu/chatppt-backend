@@ -1,3 +1,4 @@
+#backend/api/views.py
 import os
 import time
 from groq import Groq
@@ -8,8 +9,8 @@ from django.conf import settings
 client = Groq(api_key=settings.GROQ_API_KEY)
 
 GROQ_MODELS = [
-    "llama-3.1-8b-instant",
     "llama-3.1-70b-versatile",
+    "llama-3.1-8b-instant",
     "mixtral-8x7b",
 ]
 
