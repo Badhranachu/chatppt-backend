@@ -13,27 +13,59 @@ GROQ_MODELS = [
     "mixtral-8x7b",
     "gemma2-9b-it",
     "gemma-7b-it",
-    "llama3-groq-70b-tool-use"
+    "llama3-groq-70b-tool-use",
 ]
+
 
 @api_view(["POST"])
 def chat(request):
-    user_message = request.data.get("message", "")
-    context = request.data.get("context", "")
-    theme = request.data.get("theme", "annyan")  # default
-    image_base64 = request.data.get("image_base64", None)
+    """
+    Expected JSON from frontend:
+    {
+        "message": "hi",
+        "theme": "annyan" or "ambi",
+        "image_base64": null or "...",
+        "history": [
+            {"role": "user", "content": "hai", "theme": "annyan"},
+            {"role": "assistant", "content": "heyy myree", "theme": "annyan"}
+        ]
+    }
+    """
 
-    # Select correct system prompt
-    system_prompt = (
-        settings.CHATPPT_AMBI_PROMPT
-        if theme == "ambi"
-        else settings.CHATPPT_ANNYAN_PROMPT
-    )
+    user_message = request.data.get("message", "") or ""
+    theme = request.data.get("theme", "annyan")
+    image_base64 = request.data.get("image_base64", None)
+    history = request.data.get("history", [])
+
+    # Safety: ensure history is a list
+    if not isinstance(history, list):
+        history = []
+
+    # SYSTEM PROMPT BASED ON PERSONALITY
+    if theme == "ambi":
+        system_prompt = settings.CHATPPT_AMBI_PROMPT
+    else:
+        theme = "annyan"
+        system_prompt = settings.CHATPPT_ANNYAN_PROMPT
 
     messages = [{"role": "system", "content": system_prompt}]
-    if context:
-        messages.append({"role": "assistant", "content": context})
 
+    # Add ONLY previous messages from SAME theme
+    for msg in history:
+        try:
+            if msg.get("theme") != theme:
+                continue
+            if msg.get("role") not in ("user", "assistant"):
+                continue
+            content = msg.get("content")
+            if not isinstance(content, str) or not content.strip():
+                continue
+
+            messages.append({"role": msg.get("role"), "content": content})
+        except:
+            continue
+
+    # Add NEW USER MESSAGE
     if image_base64:
         messages.append({
             "role": "user",
@@ -45,19 +77,30 @@ def chat(request):
     else:
         messages.append({"role": "user", "content": user_message})
 
-    start_time = time.time()
-
+    # MULTI-MODEL FAILOVER
+    start = time.time()
     for model in GROQ_MODELS:
         try:
             response = client.chat.completions.create(
                 model=model,
                 messages=messages,
                 temperature=0.8,
-                timeout=18
+                timeout=18,
             )
-            return Response({"answer": response.choices[0].message.content})
+            answer = response.choices[0].message.content
+
+            # MUST include theme — React needs this so typing animation works
+            return Response({
+                "answer": answer,
+                "theme": theme
+            })
+
         except Exception:
-            if time.time() - start_time > 25:
+            if time.time() - start > 25:
                 break
 
-    return Response({"answer": "😵 All Groq models busy — try again shortly."})
+    # FALLBACK
+    return Response({
+        "answer": "😵 All Groq models busy — try again shortly.",
+        "theme": theme
+    })
